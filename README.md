@@ -1,6 +1,6 @@
 # jaytel0 Pi Extensions
 
-A small collection of extensions for [Pi](https://pi.dev/).
+A collection of extensions for [Pi](https://pi.dev/).
 
 ## Install
 
@@ -16,34 +16,11 @@ Then restart Pi or run:
 
 ## Extensions
 
-| Extension | What it does |
+| Extension | Description |
 | --- | --- |
-| [`openai-fast-mode`](extensions/openai-fast-mode) | Adds `/fast` for supported OpenAI GPT-5.4/GPT-5.5 models by sending `service_tier: "priority"`. |
-| [`iterate`](extensions/iterate) | Runs parallel Pi agents in isolated git worktrees, compares results, previews dev servers, and merges/cherry-picks a winner. |
-
-## Commands
-
-### OpenAI Fast Mode
-
-```text
-/fast on
-/fast off
-/fast toggle
-/fast status
-```
-
-### Iterate
-
-```text
-/iterate
-/iterate-status
-/iterate-serve
-/iterate-diff
-/iterate-pick
-/iterate-cleanup
-```
-
-See each extension folder for details.
+| [`openai-fast-mode`](extensions/openai-fast-mode) | Adds an OpenAI Fast mode toggle for supported GPT-5.4/GPT-5.5 models. |
+| [`iterate`](extensions/iterate) | Runs parallel Pi agents in isolated git worktrees so you can compare and merge the best result. |
+| [`pi-goal`](extensions/pi-goal) | Adds a Codex-style persistent `/goal` command that keeps working until the objective is complete. |
 
 ## License
 

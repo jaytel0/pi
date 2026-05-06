@@ -1,27 +1,13 @@
-# Pi OpenAI Fast Mode
+# OpenAI Fast Mode
 
-Toggle OpenAI Fast mode in [Pi](https://pi.dev/) for supported GPT models.
-
-This extension sends the same request value Codex uses for `/fast on`:
-
-```json
-{ "service_tier": "priority" }
-```
-
-## What it does
-
-- Adds `/fast on`, `/fast off`, `/fast toggle`, and `/fast status`.
-- Persists the setting in `~/.pi/agent/fast-mode.json`.
-- Applies only to OpenAI Responses providers and GPT-5.4/GPT-5.5 model families.
-- Shows a `⚡` next to the model name in Pi's footer when Fast mode is active.
+Adds `/fast` to Pi for supported OpenAI GPT models.
 
 ## Install
 
-Copy or symlink this directory into Pi's extension folder:
+Install the full extension collection:
 
 ```bash
-mkdir -p ~/.pi/agent/extensions
-ln -s /path/to/pi-openai-fast-mode ~/.pi/agent/extensions/openai-fast-mode
+pi install https://github.com/jaytel0/pi
 ```
 
 Then restart Pi or run:
@@ -36,55 +22,43 @@ Then restart Pi or run:
 /fast on       enable Fast mode
 /fast off      disable Fast mode
 /fast toggle   toggle Fast mode
-/fast status   show current state and request stats
+/fast status   show current state
 ```
 
-Fast mode only changes requests for supported models. Other providers/models are left untouched.
+When Fast mode is active for the current model, Pi shows `⚡` next to the model name.
+
+## What it does
+
+- Sends `service_tier: "priority"` on supported OpenAI Responses requests.
+- Persists state in `~/.pi/agent/fast-mode.json`.
+- Leaves unsupported models and providers unchanged.
 
 ## Supported models
 
-By default:
+- `openai/gpt-5.4*`
+- `openai/gpt-5.5*`
+- `openai-codex/gpt-5.4*`
+- `openai-codex/gpt-5.5*`
 
-- `gpt-5.4`, `gpt-5.4-*`
-- `gpt-5.5`, `gpt-5.5-*`
+## Notes
 
-On providers:
+- OpenAI or your proxy controls entitlement, speed, and billing.
+- If an endpoint does not support `service_tier: "priority"`, it may ignore it or return an error.
+- The `⚡` indicator uses Pi's custom footer API, so it can override other custom-footer extensions.
 
-- `openai` using `openai-responses`
-- `openai-codex` using `openai-codex-responses`
-
-## Important notes
-
-- Server-side entitlement and billing are controlled by OpenAI or your proxy.
-- If your endpoint does not support `service_tier: "priority"`, it may ignore the field or return an error.
-- With an OpenAI API key, this uses normal API billing. ChatGPT/Codex credit behavior depends on the endpoint you use.
-- The lightning-bolt indicator uses Pi's custom footer API, so it may override other custom-footer extensions.
-
-## Verify
-
-Mock integration test:
+## Test
 
 ```bash
-cd /path/to/pi-openai-fast-mode
+cd extensions/openai-fast-mode
 python3 tests/mock-openai-fast-test.py
 ```
 
-Real endpoint benchmark:
+For a real endpoint benchmark:
 
 ```bash
-cd /path/to/pi-openai-fast-mode
 OPENAI_API_KEY=... python3 tests/real-endpoint-benchmark.py
 ```
 
-If your OpenAI endpoint is configured by a Pi provider extension, load it before this extension:
-
-```bash
-PI_FAST_TEST_PROVIDER_EXTENSIONS=/path/to/provider-extension.ts \
-  python3 tests/real-endpoint-benchmark.py
-```
-
-The real benchmark prints redacted token metadata only.
-
 ## Why `priority`?
 
-Codex accepts the user-facing value `fast`, but maps it to the OpenAI request value `priority` before sending the Responses API request. This extension injects that request value directly in Pi's `before_provider_request` hook.
+Codex exposes this as `/fast`, but sends `service_tier: "priority"` to the Responses API. This extension applies the same request field in Pi.
