@@ -1,0 +1,20 @@
+{
+  "name": "pi-computer-use",
+  "version": "0.1.0",
+  "description": "Pi extension that exposes Codex-installed macOS Computer Use tools to any Pi model.",
+  "type": "module",
+  "license": "MIT",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "keywords": [
+    "pi",
+    "pi-extension",
+    "computer-use",
+    "codex",
+    "macos",
+    "automation"
+  ]
+}
