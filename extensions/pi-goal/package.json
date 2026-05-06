@@ -1,0 +1,19 @@
+{
+  "name": "pi-goal",
+  "version": "0.1.0",
+  "description": "Pi extension that adds a Codex-style persistent /goal command with autonomous continuation until completion.",
+  "type": "module",
+  "license": "MIT",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "keywords": [
+    "pi",
+    "pi-extension",
+    "goal",
+    "codex",
+    "autonomous"
+  ]
+}
