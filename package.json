@@ -1,23 +1,15 @@
 {
-  "name": "pi-openai-fast-mode",
+  "name": "jaytel0-pi",
   "version": "0.1.0",
-  "description": "Pi extension that toggles OpenAI GPT-5.4/GPT-5.5 Fast mode by sending service_tier=priority.",
-  "type": "module",
+  "description": "Pi extensions by jaytel0.",
   "license": "MIT",
+  "keywords": ["pi-package", "pi", "pi-extension"],
   "pi": {
-    "extensions": [
-      "./index.ts"
-    ]
+    "extensions": ["./extensions"]
   },
-  "scripts": {
-    "test:mock": "python3 tests/mock-openai-fast-test.py",
-    "bench:real": "python3 tests/real-endpoint-benchmark.py"
-  },
-  "keywords": [
-    "pi",
-    "pi-extension",
-    "openai",
-    "codex",
-    "fast-mode"
-  ]
+  "peerDependencies": {
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-tui": "*"
+  }
 }
