@@ -1,18 +1,6 @@
-# jaytel0 Pi Extensions
+# Pi Extensions
 
-A collection of extensions for [Pi](https://pi.dev/).
-
-## Install
-
-```bash
-pi install https://github.com/jaytel0/pi
-```
-
-Then restart Pi or run:
-
-```text
-/reload
-```
+A few of the Pi extensions I've built for myself.
 
 ## Extensions
 
