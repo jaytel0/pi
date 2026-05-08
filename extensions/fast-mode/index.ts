@@ -468,8 +468,8 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 	});
 
 	// Shopify's general proxy extension can re-register providers per prompt. This
-	// smart extension is intentionally named zzz-fast-mode and re-applies the Claude
-	// Code vendor route only while a supported Claude Opus 4.6 model is selected.
+	// extension re-applies the Claude Code vendor route only while a supported
+	// Claude Opus 4.6 model is selected.
 	pi.on("input", async (_event, ctx) => {
 		reconcileClaudeProvider(ctx);
 		return undefined;

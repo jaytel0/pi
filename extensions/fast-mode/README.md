@@ -71,7 +71,7 @@ on providers using `openai-responses` or `openai-codex-responses`.
 ## Tests
 
 ```bash
-cd ~/.pi/agent/extensions/zzz-fast-mode
+cd ~/.pi/agent/extensions/fast-mode
 python3 tests/mock-openai-fast-test.py
 python3 tests/mock-claude-fast-payload.py
 ```
