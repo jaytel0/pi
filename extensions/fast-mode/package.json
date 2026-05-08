@@ -1,7 +1,7 @@
 {
-  "name": "pi-smart-fast-mode",
-  "version": "0.2.0",
-  "description": "Pi extension that provides one smart /fast toggle for Claude Opus 4.6 and supported Codex/OpenAI models.",
+  "name": "pi-fast-mode",
+  "version": "0.3.0",
+  "description": "Pi extension that toggles Codex/OpenAI GPT-5.4/GPT-5.5 Fast mode by sending service_tier=priority.",
   "type": "module",
   "license": "MIT",
   "pi": {
@@ -10,18 +10,13 @@
     ]
   },
   "scripts": {
-    "test:openai": "python3 tests/mock-openai-fast-test.py",
-    "test:claude": "python3 tests/mock-claude-fast-payload.py",
-    "test": "npm run test:openai && npm run test:claude"
+    "test": "python3 tests/mock-openai-fast-test.py"
   },
   "keywords": [
     "pi",
     "pi-extension",
     "fast-mode",
     "codex",
-    "openai",
-    "anthropic",
-    "claude",
-    "shopify"
+    "openai"
   ]
 }
