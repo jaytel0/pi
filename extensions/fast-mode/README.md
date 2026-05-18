@@ -29,6 +29,16 @@ The footer shows a yellow `⚡` whenever Fast mode is toggled on, even if the cu
 
 The old `/claude-fast` command/extension has been removed; use `/fast` for both supported Claude and Codex/OpenAI models.
 
+## Installation / load order
+
+If you also use the Shopify proxy extension, install this extension under a late-sorting directory name such as:
+
+```text
+~/.pi/agent/extensions/zzz-fast-mode
+```
+
+That load order is required because the Shopify proxy extension re-registers Anthropic providers on each prompt. Smart Fast Mode must run after it so Claude Opus 4.6 is re-routed from the managed proxy to the Claude Code vendor route before `speed: "fast"` is injected.
+
 ## State
 
 State is stored in:
