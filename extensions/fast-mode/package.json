@@ -12,6 +12,7 @@
   "scripts": {
     "test:openai": "python3 tests/mock-openai-fast-test.py",
     "test:claude": "python3 tests/mock-claude-fast-payload.py",
+    "benchmark:claude-fast": "python3 tests/real-claude-fast-benchmark.py",
     "test": "npm run test:openai && npm run test:claude"
   },
   "keywords": [

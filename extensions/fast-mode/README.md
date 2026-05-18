@@ -84,4 +84,9 @@ on providers using `openai-responses` or `openai-codex-responses`.
 cd ~/.pi/agent/extensions/zzz-fast-mode
 python3 tests/mock-openai-fast-test.py
 python3 tests/mock-claude-fast-payload.py
+
+# Real Opus 4.6 measurement through Pi + the installed extension.
+# This toggles ~/.pi/agent/fast-mode.json off/on, runs paired requests,
+# verifies speed=fast injection, measures latency, and computes expected cost.
+python3 tests/real-claude-fast-benchmark.py
 ```
