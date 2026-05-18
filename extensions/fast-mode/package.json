@@ -22,7 +22,6 @@
     "codex",
     "openai",
     "anthropic",
-    "claude",
-    "shopify"
+    "claude"
   ]
 }

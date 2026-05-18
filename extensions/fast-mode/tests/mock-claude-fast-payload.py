@@ -79,7 +79,7 @@ def run_pi(tmp: Path, port: int, enabled: bool, model: str) -> subprocess.Comple
         "MOCK_ANTHROPIC_BASE_URL": f"http://127.0.0.1:{port}",
         "PI_CLAUDE_FAST_BASE_URL": f"http://127.0.0.1:{port}",
         "PI_CLAUDE_FAST_API_KEY": "test-key-not-sent-to-real-anthropic",
-        "PI_CLAUDE_FAST_CUSTOM_HEADERS": "X-Shopify-Session-Affinity-Header: X-Claude-Code-Session-Id\nShopify-Usage-Tag: [\"pi-mock-test\"]",
+        "PI_CLAUDE_FAST_CUSTOM_HEADERS": "X-Claude-Fast-Test-Session: mock-session\nX-Claude-Fast-Test-Usage: pi-mock-test",
     })
     return subprocess.run([
         "pi",

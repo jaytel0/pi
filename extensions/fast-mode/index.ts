@@ -25,7 +25,7 @@ type FastModeStats = {
 	lastProviderSetup?: string;
 };
 
-type ShopifyClaudeConfig = {
+type ClaudeFastConfig = {
 	baseUrl: string;
 	apiKeyHelper?: string;
 	customHeaders: Record<string, string>;
@@ -39,7 +39,7 @@ const SUPPORTED_CODEX_PROVIDERS = new Set(["openai", "openai-codex"]);
 const SUPPORTED_CLAUDE_MODEL_RE = /(?:^|[-_])opus[-_]?4[-_.]?6(?:$|[-_.])/i;
 const SUPPORTED_CLAUDE_API = "anthropic-messages";
 const SUPPORTED_CLAUDE_PROVIDER_PREFIX = "anthropic";
-const CLAUDE_PROVIDERS_TO_OVERRIDE = ["anthropic", "anthropic-1m", "anthropic-250k-prefer-using-this-one"];
+const CLAUDE_PROVIDERS_TO_OVERRIDE = ["anthropic", "anthropic-250k-prefer-using-this-one"];
 const CLAUDE_FAST_BETA = "fast-mode-2026-02-01";
 const CLAUDE_CODE_BETAS = [
 	"claude-code-20250219",
@@ -167,15 +167,10 @@ function loadClaudeSettings(): { apiKeyHelper?: string; env?: Record<string, str
 	}
 }
 
-function loadShopifyClaudeConfig(): ShopifyClaudeConfig | undefined {
+function loadClaudeFastConfig(): ClaudeFastConfig | undefined {
 	const settings = loadClaudeSettings();
-	const envBaseUrl = process.env.PI_CLAUDE_FAST_BASE_URL || process.env.SHOPIFY_ANTHROPIC_BASE_URL;
-	const baseUrl = envBaseUrl || settings?.env?.ANTHROPIC_BASE_URL || process.env.ANTHROPIC_BASE_URL;
+	const baseUrl = process.env.PI_CLAUDE_FAST_BASE_URL || settings?.env?.ANTHROPIC_BASE_URL || process.env.ANTHROPIC_BASE_URL;
 	if (!baseUrl) return undefined;
-
-	// By default, only take over Anthropic when the discovered base URL is the
-	// Shopify AI proxy. Tests and explicit overrides can use PI_CLAUDE_FAST_BASE_URL.
-	if (!envBaseUrl && !baseUrl.includes("proxy.shopify.ai")) return undefined;
 
 	return {
 		baseUrl,
@@ -188,16 +183,16 @@ function loadShopifyClaudeConfig(): ShopifyClaudeConfig | undefined {
 	};
 }
 
-function resolveShopifyClaudeToken(config: ShopifyClaudeConfig): string | undefined {
+function resolveClaudeFastToken(config: ClaudeFastConfig): string | undefined {
 	if (process.env.PI_CLAUDE_FAST_API_KEY) return process.env.PI_CLAUDE_FAST_API_KEY;
-	if (process.env.ANTHROPIC_API_KEY?.startsWith("shopify-")) return process.env.ANTHROPIC_API_KEY;
-	if (!config.apiKeyHelper) return undefined;
-
-	try {
-		return execFileSync(config.apiKeyHelper, { shell: true, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
-	} catch {
-		return undefined;
+	if (config.apiKeyHelper) {
+		try {
+			return execFileSync(config.apiKeyHelper, { shell: true, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+		} catch {
+			return undefined;
+		}
 	}
+	return process.env.ANTHROPIC_API_KEY;
 }
 
 function ensureSystemArray(system: unknown): Array<Record<string, unknown>> {
@@ -214,7 +209,7 @@ function withClaudeFastPayload(payload: Record<string, unknown>): Record<string,
 
 	return {
 		...payload,
-		// Shopify's Claude Code fast lane expects the Claude Code/Agent SDK request
+		// The Claude Code fast lane expects the Claude Code/Agent SDK request
 		// shape: fast speed, the fast-mode beta header, and adaptive thinking. The
 		// identity block mirrors Claude Code without hiding Pi's real system prompt.
 		thinking: { type: "adaptive" },
@@ -243,15 +238,15 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 	let cooldownUntil = 0;
 
 	function configureClaudeProvider() {
-		const config = loadShopifyClaudeConfig();
+		const config = loadClaudeFastConfig();
 		if (!config) {
-			stats.lastProviderSetup = "no Shopify Claude Code proxy settings detected";
+			stats.lastProviderSetup = "no Claude Code fast-lane provider settings detected";
 			return false;
 		}
 
-		const token = resolveShopifyClaudeToken(config);
+		const token = resolveClaudeFastToken(config);
 		if (!token) {
-			stats.lastProviderSetup = "Shopify Claude proxy detected, but no token was resolved";
+			stats.lastProviderSetup = "Claude Code fast-lane provider detected, but no token was resolved";
 			return false;
 		}
 
@@ -280,7 +275,7 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 		}
 
 		providerConfigured = true;
-		stats.lastProviderSetup = `shopify claude proxy enabled (${config.baseUrl})`;
+		stats.lastProviderSetup = `claude fast-lane provider enabled (${config.baseUrl})`;
 		return true;
 	}
 
@@ -295,7 +290,7 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 			previousAnthropicApiKeyCaptured = false;
 			previousAnthropicApiKey = undefined;
 		}
-		stats.lastProviderSetup = "shopify claude proxy disabled";
+		stats.lastProviderSetup = "claude fast-lane provider disabled";
 	}
 
 	function reconcileClaudeProvider(ctx: ExtensionContext) {
@@ -467,9 +462,10 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 		reconcileClaudeProvider(ctx);
 	});
 
-	// Shopify's general proxy extension can re-register providers per prompt. This
-	// smart extension is intentionally named zzz-fast-mode and re-applies the Claude
-	// Code vendor route only while a supported Claude Opus 4.6 model is selected.
+	// Other provider extensions can re-register Anthropic providers per prompt. This
+	// smart extension is intentionally installed under a late-sorting name such as
+	// zzz-fast-mode and re-applies the Claude Code fast-lane route only while a
+	// supported Claude Opus 4.6 model is selected.
 	pi.on("input", async (_event, ctx) => {
 		reconcileClaudeProvider(ctx);
 		return undefined;

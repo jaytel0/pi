@@ -41,8 +41,8 @@ PROMPTS = [
     "Summarize the tradeoff between latency and throughput in distributed systems in 6 concise sentences.",
 ]
 
-# Rates per million tokens. Standard matches the installed Shopify/Pi Opus 4.6
-# provider config (5/25). Fast mode is Claude Code fast-mode pricing (30/150),
+# Rates per million tokens. Standard matches the installed Pi Opus 4.6
+# provider config used by the benchmark (5/25). Fast mode is Claude Code fast-mode pricing (30/150),
 # documented by Anthropic, so the multiplier is 6x on both input/cache and output.
 STANDARD_INPUT_PER_MTOK = 5.0
 STANDARD_OUTPUT_PER_MTOK = 25.0

@@ -7,7 +7,7 @@ One Pi extension that makes `/fast` a smart toggle across the currently selected
 When Fast mode is enabled:
 
 - **Claude Opus 4.6 only** on Anthropic-compatible providers uses the Claude Code fast lane:
-  - routes supported Opus 4.6 requests through the configured Shopify Claude Code proxy
+  - routes supported Opus 4.6 requests through the configured Claude Code fast-lane proxy
   - injects `speed: "fast"`
   - injects adaptive thinking and the Claude Agent SDK identity block required by that route
   - registers Claude Code beta headers, including `fast-mode-2026-02-01`
@@ -31,13 +31,13 @@ The old `/claude-fast` command/extension has been removed; use `/fast` for both 
 
 ## Installation / load order
 
-If you also use the Shopify proxy extension, install this extension under a late-sorting directory name such as:
+If you also use another provider/proxy extension that re-registers Anthropic providers, install this extension under a late-sorting directory name such as:
 
 ```text
 ~/.pi/agent/extensions/zzz-fast-mode
 ```
 
-That load order is required because the Shopify proxy extension re-registers Anthropic providers on each prompt. Smart Fast Mode must run after it so Claude Opus 4.6 is re-routed from the managed proxy to the Claude Code vendor route before `speed: "fast"` is injected.
+That load order is required because some proxy extensions re-register Anthropic providers on each prompt. Smart Fast Mode must run after them so Claude Opus 4.6 is re-routed from a generic/managed proxy to the Claude Code fast-lane route before `speed: "fast"` is injected.
 
 ## State
 
@@ -51,7 +51,7 @@ Only the unified state file is used. The retired Claude-only state file (`~/.pi/
 
 ## Claude proxy configuration
 
-Claude fast mode reads Shopify Claude Code proxy settings from `~/.claude/settings.json`:
+Claude fast mode reads Claude Code fast-lane proxy settings from `~/.claude/settings.json`:
 
 - `apiKeyHelper`
 - `env.ANTHROPIC_BASE_URL`
