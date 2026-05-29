@@ -6,14 +6,14 @@ One Pi extension that makes `/fast` a smart toggle across the currently selected
 
 When Fast mode is enabled:
 
-- **Claude Opus 4.6 only** on Anthropic-compatible providers uses the Claude Code fast lane:
-  - routes supported Opus 4.6 requests through the configured Claude Code fast-lane proxy
+- **Claude Opus 4.6 and 4.8 only** on Anthropic-compatible providers use the Claude Code fast lane:
+  - routes supported Opus 4.6/4.8 requests through the configured Claude Code fast-lane proxy
   - injects `speed: "fast"`
   - injects adaptive thinking and the Claude Agent SDK identity block required by that route
   - registers Claude Code beta headers, including `fast-mode-2026-02-01`
 - **Supported Codex/OpenAI models** use the Codex-style fast request value:
   - injects `service_tier: "priority"` for GPT-5.4/GPT-5.5 Responses requests
-- **Unsupported models are left untouched.** This is especially important for Claude: Sonnet and non-4.6 Opus models are not routed or mutated.
+- **Unsupported models are left untouched.** This is especially important for Claude: Sonnet and other Opus models (4.5, 4.7, etc.) are not routed or mutated.
 
 The footer shows a yellow `⚡` whenever Fast mode is toggled on, even if the current model is unsupported. Use `/fast status` to see whether the current model is actively using Claude fast, Codex priority, or is unsupported.
 
@@ -69,7 +69,8 @@ Tokens are never printed.
 
 Claude:
 
-- `claude-opus-4-6` / Opus 4.6 variants only
+- `claude-opus-4-6` / Opus 4.6 variants
+- `claude-opus-4-8` / Opus 4.8 variants
 
 Codex/OpenAI:
 

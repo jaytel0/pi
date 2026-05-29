@@ -36,7 +36,7 @@ const SUPPORTED_CODEX_MODEL_RE = /^gpt-5\.(4|5)(?:$|-)/i;
 const SUPPORTED_CODEX_APIS = new Set(["openai-responses", "openai-codex-responses"]);
 const SUPPORTED_CODEX_PROVIDERS = new Set(["openai", "openai-codex"]);
 
-const SUPPORTED_CLAUDE_MODEL_RE = /(?:^|[-_])opus[-_]?4[-_.]?6(?:$|[-_.])/i;
+const SUPPORTED_CLAUDE_MODEL_RE = /(?:^|[-_])opus[-_]?4[-_.]?(?:6|8)(?:$|[-_.])/i;
 const SUPPORTED_CLAUDE_API = "anthropic-messages";
 const SUPPORTED_CLAUDE_PROVIDER_PREFIX = "anthropic";
 const CLAUDE_PROVIDERS_TO_OVERRIDE = ["anthropic", "anthropic-250k-prefer-using-this-one"];
@@ -101,7 +101,7 @@ function supportsClaudeFastMode(model: ExtensionContext["model"] | undefined, pa
 	if (!SUPPORTED_CLAUDE_MODEL_RE.test(modelId)) return false;
 
 	// Claude fast mode is currently only known to work for Anthropic-compatible
-	// Opus 4.6 models. Do not route or mutate Sonnet, Opus 4.5/4.7, etc.
+	// Opus 4.6 and 4.8 models. Do not route or mutate Sonnet, Opus 4.5/4.7, etc.
 	if (model) {
 		return String(model.api) === SUPPORTED_CLAUDE_API && String(model.provider).startsWith(SUPPORTED_CLAUDE_PROVIDER_PREFIX);
 	}
@@ -136,7 +136,7 @@ function commandHelp(): string {
 	return [
 		"Usage: /fast [on|off|toggle|status|reload-provider]",
 		"Fast mode is one smart toggle:",
-		"- Claude Opus 4.6 on Anthropic providers uses Claude Code fast mode (speed=fast).",
+		"- Claude Opus 4.6/4.8 on Anthropic providers uses Claude Code fast mode (speed=fast).",
 		"- Supported Codex/OpenAI GPT-5.4/GPT-5.5 Responses models use service_tier=priority.",
 		"Unsupported models are left untouched.",
 	].join("\n");
@@ -305,8 +305,8 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 		if (!state.enabled) return "off";
 		const route = routeFor(ctx.model);
 		if (route === "claude" && Date.now() < cooldownUntil) return "on ⚡ (Claude cooling down after 429)";
-		if (route === "claude" && !providerConfigured) return "on ⚡ (Claude Opus 4.6; proxy not configured)";
-		if (route === "claude") return "on ⚡ (Claude Opus 4.6 fast)";
+		if (route === "claude" && !providerConfigured) return "on ⚡ (Claude Opus 4.6/4.8; proxy not configured)";
+		if (route === "claude") return "on ⚡ (Claude Opus 4.6/4.8 fast)";
 		if (route === "codex") return "on ⚡ (Codex priority)";
 		return "on ⚡ (current model unsupported)";
 	}
@@ -465,7 +465,7 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 	// Other provider extensions can re-register Anthropic providers per prompt. This
 	// smart extension is intentionally installed under a late-sorting name such as
 	// zzz-fast-mode and re-applies the Claude Code fast-lane route only while a
-	// supported Claude Opus 4.6 model is selected.
+	// supported Claude Opus 4.6/4.8 model is selected.
 	pi.on("input", async (_event, ctx) => {
 		reconcileClaudeProvider(ctx);
 		return undefined;
@@ -579,7 +579,7 @@ export default function smartFastModeExtension(pi: ExtensionAPI) {
 	}
 
 	pi.registerCommand("fast", {
-		description: "Toggle smart Fast mode for Claude Opus 4.6 and supported Codex/OpenAI models. Usage: /fast [on|off|toggle|status]",
+		description: "Toggle smart Fast mode for Claude Opus 4.6/4.8 and supported Codex/OpenAI models. Usage: /fast [on|off|toggle|status]",
 		handler: handleFastCommand,
 	});
 
