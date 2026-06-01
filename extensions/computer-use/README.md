@@ -54,10 +54,29 @@ Then restart Pi or run:
 ## Commands
 
 ```text
-/computer-use-status    show bridge status
+/computer-use-status    show bridge status (includes approved apps)
 /computer-use-restart   restart the Codex app-server bridge
 /computer-use-tools     list registered Computer Use tools
+/computer-use-approve   approve an app (name or bundle id) without the Codex GUI
 ```
+
+## App approvals
+
+Codex Computer Use only controls apps whose bundle identifier is in its
+allowlist (`ComputerUseAppApprovals.json` in the
+`2DC432GLL2.com.openai.sky.CUAService` group container). Inside Codex Desktop
+that list is filled by a GUI "Allow" dialog. Because Pi drives `codex
+app-server` headlessly, that dialog can't be shown, so an un-approved app is
+auto-denied with:
+
+```text
+Computer Use approval denied via MCP elicitation for app '<bundleID>'.
+```
+
+To avoid this, the extension **auto-approves the target app** before every call:
+it resolves the app name/bundle id, adds it to the allowlist, and restarts the
+bridge so Codex re-reads the file. You can also approve an app manually with
+`/computer-use-approve <App Name | bundle.id>`.
 
 ## Usage notes
 

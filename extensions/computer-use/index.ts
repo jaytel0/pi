@@ -1,10 +1,13 @@
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { existsSync } from "node:fs";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface, type Interface as ReadlineInterface } from "node:readline";
 import { Type } from "typebox";
 
 const SERVER_NAME = "computer-use";
+const CUA_GROUP_PREFIX = "2DC432GLL2.com.openai.sky.CUAService";
 const DEFAULT_CODEX_BIN = "/Applications/Codex.app/Contents/Resources/codex";
 const CONDUCTOR_CODEX_BIN = "/Applications/Conductor.app/Contents/Resources/bin/codex";
 const REQUEST_TIMEOUT_MS = 120_000;
@@ -177,6 +180,103 @@ function findCodexBin(): string | undefined {
 	if (existsSync(DEFAULT_CODEX_BIN)) return DEFAULT_CODEX_BIN;
 	if (existsSync(CONDUCTOR_CODEX_BIN)) return CONDUCTOR_CODEX_BIN;
 	return undefined;
+}
+
+/**
+ * Codex Computer Use keeps a per-app allowlist of bundle identifiers it is
+ * permitted to control. Inside Codex Desktop this list is populated by a GUI
+ * approval dialog. When Pi drives `codex app-server` headlessly there is no UI
+ * to answer that dialog, so Codex auto-denies the elicitation with:
+ *   "Computer Use approval denied via MCP elicitation for app '<bundleID>'."
+ *
+ * We work around this by seeding the same allowlist file directly, which is
+ * exactly what clicking "Allow" in the GUI would write.
+ */
+function approvalStorePath(): string {
+	return join(
+		homedir(),
+		"Library",
+		"Group Containers",
+		CUA_GROUP_PREFIX,
+		"Library",
+		"Application Support",
+		"Software",
+		"ComputerUseAppApprovals.json",
+	);
+}
+
+function readApprovedBundleIds(): string[] {
+	try {
+		const raw = readFileSync(approvalStorePath(), "utf8");
+		const parsed = JSON.parse(raw);
+		const ids = parsed?.approvedBundleIdentifiers;
+		return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === "string") : [];
+	} catch {
+		return [];
+	}
+}
+
+/** Returns true if a new approval was written (i.e. the bridge should restart). */
+function ensureBundleApproved(bundleId: string): boolean {
+	if (!bundleId) return false;
+	const path = approvalStorePath();
+	const current = readApprovedBundleIds();
+	if (current.includes(bundleId)) return false;
+	const next = [...new Set([...current, bundleId])].sort();
+	try {
+		mkdirSync(join(path, ".."), { recursive: true });
+		writeFileSync(path, JSON.stringify({ approvedBundleIdentifiers: next }), "utf8");
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Resolve an app name OR bundle identifier to a concrete bundle identifier so we
+ * can pre-approve it. Bundle IDs (contain a dot, no path) are returned as-is.
+ * Names are resolved via Spotlight (mdfind) against installed .app bundles.
+ */
+function resolveBundleId(app: string): string | undefined {
+	const trimmed = app.trim();
+	if (!trimmed) return undefined;
+	// Looks like a bundle id already: has dots and no spaces/slashes.
+	if (/^[A-Za-z0-9.-]+$/.test(trimmed) && trimmed.includes(".")) return trimmed;
+
+	const name = trimmed.replace(/\.app$/i, "");
+	// Try common locations first for speed, then fall back to mdfind.
+	const candidates: string[] = [];
+	for (const dir of ["/Applications", "/System/Applications", join(homedir(), "Applications")]) {
+		candidates.push(join(dir, `${name}.app`));
+	}
+	let appPath = candidates.find((p) => existsSync(p));
+	if (!appPath) {
+		try {
+			const out = spawnSync(
+				"mdfind",
+				[`kMDItemKind == 'Application' && kMDItemDisplayName == '${name}*'cd`],
+				{ encoding: "utf8", timeout: 5000 },
+			);
+			appPath = out.stdout
+				?.split("\n")
+				.map((s) => s.trim())
+				.find((s) => s.endsWith(".app"));
+		} catch {
+			/* ignore */
+		}
+	}
+	if (!appPath || !existsSync(appPath)) return undefined;
+	try {
+		const plist = join(appPath, "Contents", "Info.plist");
+		const out = spawnSync("/usr/libexec/PlistBuddy", ["-c", "Print:CFBundleIdentifier", plist], {
+			encoding: "utf8",
+			timeout: 5000,
+		});
+		const id = out.stdout?.trim();
+		return id && id.includes(".") ? id : undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 function compactJson(value: unknown, limit = 1400): string {
@@ -483,6 +583,16 @@ export default function computerUseExtension(pi: ExtensionAPI) {
 	}
 
 	async function callComputerUseTool(mcpName: string, params: any, ctx: ExtensionContext, signal?: AbortSignal) {
+		// Pre-approve the target app in Codex's allowlist so the headless bridge
+		// never hits an auto-denied approval elicitation. If we just added an
+		// approval, the running computer-use MCP server still has the old list
+		// cached, so restart the bridge to force it to re-read the file.
+		if (params?.app) {
+			const bundleId = resolveBundleId(String(params.app));
+			if (bundleId && ensureBundleApproved(bundleId)) {
+				stopClient();
+			}
+		}
 		await ensureStarted(ctx, signal);
 		if (!client || !threadId) throw new Error("Computer Use bridge is not initialized");
 		const result = await client.request(
@@ -551,6 +661,7 @@ export default function computerUseExtension(pi: ExtensionAPI) {
 								type: "text",
 								text:
 									`Computer Use bridge error while running ${def.mcpName}: ${lastError}\n\n` +
+									`If this is an app-approval denial, approve it with /computer-use-approve <App>.\n` +
 									`If Codex/Computer Use was updated, try /computer-use-restart.`,
 							},
 						],
@@ -572,6 +683,7 @@ export default function computerUseExtension(pi: ExtensionAPI) {
 				`Thread: ${threadId ?? "not started"}`,
 				`Cwd: ${sessionCwd ?? ctx.cwd}`,
 				`Permission prompts: disabled` ,
+				`Approved apps: ${readApprovedBundleIds().join(", ") || "none"}`,
 				`Last error: ${lastError ?? "none"}`,
 			].join("\n");
 
@@ -612,6 +724,33 @@ export default function computerUseExtension(pi: ExtensionAPI) {
 			ctx.ui.notify(
 				TOOL_DEFS.map((tool) => `${tool.piName} → ${SERVER_NAME}/${tool.mcpName}`).join("\n"),
 				"info",
+			);
+		},
+	});
+
+	pi.registerCommand("computer-use-approve", {
+		description: "Approve an app (name or bundle id) for Computer Use without the Codex GUI",
+		handler: async (args, ctx) => {
+			const app = String(args ?? "").trim();
+			if (!app) {
+				ctx.ui.notify(
+					`Usage: /computer-use-approve <App Name | bundle.id>\nApproved: ${readApprovedBundleIds().join(", ") || "none"}`,
+					"info",
+				);
+				return;
+			}
+			const bundleId = resolveBundleId(app);
+			if (!bundleId) {
+				ctx.ui.notify(`Could not resolve a bundle id for "${app}". Pass the exact bundle id instead.`, "error");
+				return;
+			}
+			const added = ensureBundleApproved(bundleId);
+			if (added) stopClient();
+			ctx.ui.notify(
+				added
+					? `Approved ${bundleId} for Computer Use. Bridge will restart on next use.`
+					: `${bundleId} was already approved.`,
+				"success",
 			);
 		},
 	});
